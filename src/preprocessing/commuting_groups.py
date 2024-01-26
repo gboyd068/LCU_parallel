@@ -37,10 +37,10 @@ def calc_min_cliques(graph):
     return coloring.a
     
 
-def commuting_groups(hamiltonian, num_qubits):
+def commuting_groups(hamiltonian, n_qubits=None):
     """Return a list of commuting groups of operators."""
-    if num_qubits is None:
-        num_qubits = hamiltonian.n_qubits
+    if n_qubits is None:
+        n_qubits = hamiltonian.n_qubits
     # Get the minimal cliques
     clique_array = calc_min_cliques(commutativity_graph(hamiltonian, n_qubits))
     # count number of appearances of each integer in array
@@ -51,37 +51,4 @@ def commuting_groups(hamiltonian, num_qubits):
     group_idxs = [np.argwhere(clique_array == idx) for idx in clique_idxs]
     operator_groups = [ops[group] for group in group_idxs]
 
-
-    # move this to a test file
-    # if check_commutativity:
-    #     for group in operator_groups:
-    #         for i, term1 in enumerate(group):
-    #             for j, term2 in enumerate(group):
-    #                 if i==j:
-    #                     continue
-    #                 if of.utils.commutator(term1,term2) != zero_op:
-    #                     raise ValueError("Operators in group do not commute.")
-
-
     return operator_groups, group_idxs
-
-
-# Define the molecular geometry of H2
-geometry = [('H', (0., 1., 0.)), ('H', (0.,0. , 1.)), ('O', (0.,0. , 0.))]
-
-# get the MolecularData object
-molecule = of.MolecularData(geometry, '6-31g', 1)
-
-# Set up the PySCF molecule object
-mol = run_pyscf(molecule)
-
-# Generate the molecular Hamiltonian
-hamiltonian = of.transforms.get_fermion_operator(
-    mol.get_molecular_hamiltonian())
-n_qubits = mol.n_qubits
-
-hamiltonian = of.transforms.jordan_wigner(hamiltonian)
-
-operator_groups, group_idxs = commuting_groups(hamiltonian, n_qubits)
-sizes= [len(group) for group in group_idxs]
-print(sum(np.ceil(np.array(sizes) / n_qubits)))
