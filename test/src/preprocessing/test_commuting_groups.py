@@ -1,5 +1,6 @@
 import openfermion as of
 from openfermionpyscf import run_pyscf
+import stim
 import pytest
 from src.preprocessing.commuting_groups import commuting_groups
 
@@ -22,10 +23,10 @@ def test_commuting_groups(geometry):
 
     operator_groups, group_idxs = commuting_groups(hamiltonian, n_qubits)
 
-    zero_op = of.QubitOperator.zero()
+
     for group in operator_groups:
         for i, term1 in enumerate(group):
             for j, term2 in enumerate(group):
                 if i==j:
                     continue
-                assert of.utils.commutator(term1,term2) == zero_op
+                assert term1.commutes(term2)

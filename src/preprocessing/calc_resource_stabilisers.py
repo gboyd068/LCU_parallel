@@ -1,33 +1,29 @@
 import stim
 
-# test required stim functionality
+def clifford_transform_group_to_zs(operator_group, m_qubits):
+    """Takes a commuting groups of oeprators and calculate the clifford transformation a stim.Tableau object
+    that take those Paulis and transform them to Z operators on m_qubits"""
+    # split the operator group into paritions of size m_qubits
+    sized_groups = [operator_group[i:i+m_qubits] for i in range(0, len(operator_group), m_qubits)]
+    tableaus = []
+    for group in sized_groups:
+        print(group)
+        # I think the fact that redundant stabilisers are ignored means we cant use this
+        # might have to figure out how to use from_conjugated_generators or just use the matirx form...
+        tableaus.append(stim.Tableau.from_stabilizers(stabilizers=group,
+                allow_underconstrained=True, allow_redundant=True))
+        
+    group_sizes = [len(group) for group in sized_groups]
+    return tableaus, group_sizes
 
-t = stim.Tableau(3)
-H = stim.Tableau.from_named_gate("H")
-cnot = stim.Tableau.from_named_gate("CNOT")
-t.append(H, [0])
-t.append(cnot, [0, 1])
-
-t = stim.Tableau(3)
-identity3 = stim.Tableau.from_conjugated_generators(
-        xs=[
-            stim.PauliString("X__"),
-            stim.PauliString("_X_"),
-            stim.PauliString("__X"),
-        ],
-        zs=[
-            stim.PauliString("Z__"),
-            stim.PauliString("_Z_"),
-            stim.PauliString("__Z"),
-        ],
-    )
-
-t = stim.Tableau.from_stabilizers(stabilizers=[
-            stim.PauliString("XY_"),
-            stim.PauliString("_YX"),
-            stim.PauliString("ZZZ"),],
-            allow_underconstrained=True)
-# The conjugation of P by C is equal to C**-1 * P * C.
-
-print(t.z_output(2)) 
+def clifford_transform_multiple_groups_to_zs(operator_groups, m_qubits):
+    """Takes a list of commuting groups of oeprators and calculate the clifford transformation a stim.Tableau object
+    that take those Paulis and transform them to Z operators on m_qubits"""
+    tableaus = []
+    group_sizes = []
+    for operator_group in operator_groups:
+        tabs, gsizes = clifford_transform_group_to_zs(operator_group, m_qubits)
+        tableaus += tabs
+        group_sizes += gsizes
+    return tableaus, group_sizes
 

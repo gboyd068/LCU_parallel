@@ -38,7 +38,7 @@ def calc_min_cliques(graph):
     
 
 def commuting_groups(hamiltonian, n_qubits=None):
-    """Return a list of commuting groups of operators."""
+    """Return a list of commuting groups of paulis in the form of stim PauliStrings, as well as the indexes of terms in the Hamiltonian that belong to each group."""
     if n_qubits is None:
         n_qubits = hamiltonian.n_qubits
     # Get the minimal cliques
@@ -47,8 +47,8 @@ def commuting_groups(hamiltonian, n_qubits=None):
     clique_idxs, clique_counts = np.unique(clique_array, return_counts=True)
     # get the commuting groups
     pauli_strings = qubitop_to_stim_pauli_strings(hamiltonian, n_qubits)
-    ops = np.array(list(hamiltonian.get_operators()))
-    group_idxs = [np.argwhere(clique_array == idx) for idx in clique_idxs]
-    operator_groups = [ops[group] for group in group_idxs]
-
+    group_idxs = [np.argwhere(clique_array == idx).flatten() for idx in clique_idxs]
+    operator_groups = []
+    for i, group in enumerate(group_idxs):
+        operator_groups.append([pauli_strings[idx] for idx in group])
     return operator_groups, group_idxs
