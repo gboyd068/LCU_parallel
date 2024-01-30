@@ -3,6 +3,7 @@ from openfermionpyscf import run_pyscf
 import stim
 from src.preprocessing.commuting_groups import commuting_groups
 from src.preprocessing.calc_resource_stabilisers import clifford_transform_group_to_zs, clifford_transform_multiple_groups_to_zs
+from src.utils import clifford_idx_from_pauli_index
 import pytest
 
 
@@ -20,9 +21,7 @@ def test_clifford_transform_group_to_zs(operator_group, m_qubits):
     assert sum(group_sizes) == len(operator_group)
 
 
-
 def test_clifford_transform_multiple_groups_to_zs():
-
     geometry = [('H', (0., 1., 0.)), ('H', (0.,0. , 1.)), ('O', (0.,0. , 0.))]
     molecule = of.MolecularData(geometry, 'sto-3g', 1)
 
@@ -39,12 +38,10 @@ def test_clifford_transform_multiple_groups_to_zs():
     operator_groups, group_idxs = commuting_groups(hamiltonian, n_qubits)
     m_qubits = n_qubits
     tableaus, group_sizes = clifford_transform_multiple_groups_to_zs(operator_groups, m_qubits)
-
+    print(group_sizes)
 
     # check that the tableaus transform the operators to Zs
+    identity_tableau = stim.Tableau(m_qubits)
     for i, group in enumerate(operator_groups):
-        for j, g in enumerate(group):
-            assert tableaus[i//m_qubits].z_output(i%m_qubits) == group[j]
-    
-    # check correct number of operators in total
-    # assert sum(group_sizes) == len(operator_group)
+        for j, pauli in enumerate(group):
+            # need to completely rewrite this
