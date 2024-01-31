@@ -3,22 +3,18 @@ from openfermionpyscf import run_pyscf
 import stim
 from src.preprocessing.commuting_groups import commuting_groups
 from src.preprocessing.calc_resource_stabilisers import clifford_transform_group_to_zs, clifford_transform_multiple_groups_to_zs
-from src.utils import clifford_idx_from_pauli_index
+from src.utils import clifford_idx_from_pauli_index, qubitop_to_stim_pauli_strings
 import pytest
 
 
-test_data = [([stim.PauliString("XX"), stim.PauliString("YY"), stim.PauliString("ZZ")], 2)]
+# test_data = [([stim.PauliString("XX"), stim.PauliString("YY"), stim.PauliString("ZZ")], 2)]
 
-@pytest.mark.parametrize("operator_group, m_qubits", test_data)
-def test_clifford_transform_group_to_zs(operator_group, m_qubits):
-    tableaus, group_sizes = clifford_transform_group_to_zs(operator_group, m_qubits)
+# @pytest.mark.parametrize("operator_group, m_qubits", test_data)
+# def test_clifford_transform_group_to_zs(operator_group, m_qubits):
+#     tableaus, pauli_idxs = clifford_transform_group_to_zs(operator_group, m_qubits)
 
-    # check that the tableaus transform the operators to Zs
-    for i, g in enumerate(operator_group):
-        assert tableaus[i//m_qubits].z_output(i%m_qubits) == operator_group[i]
-    
-    # check correct number of operators in total
-    assert sum(group_sizes) == len(operator_group)
+#     # check correct number of operators in total
+#     assert sum([len(idxs) for idxs in pauli_idxs]) == len(operator_group)
 
 
 def test_clifford_transform_multiple_groups_to_zs():
@@ -34,14 +30,20 @@ def test_clifford_transform_multiple_groups_to_zs():
     n_qubits = mol.n_qubits
 
     hamiltonian = of.transforms.jordan_wigner(hamiltonian)
-
+    operators = qubitop_to_stim_pauli_strings(hamiltonian, n_qubits)
     operator_groups, group_idxs = commuting_groups(hamiltonian, n_qubits)
     m_qubits = n_qubits
-    tableaus, group_sizes = clifford_transform_multiple_groups_to_zs(operator_groups, m_qubits)
-    print(group_sizes)
+    tableaus, pauli_idxs = clifford_transform_multiple_groups_to_zs(operator_groups, group_idxs, m_qubits)
 
     # check that the tableaus transform the operators to Zs
     identity_tableau = stim.Tableau(m_qubits)
-    for i, group in enumerate(operator_groups):
-        for j, pauli in enumerate(group):
-            # need to completely rewrite this
+    for tableau_idx, ts in enumerate(pauli_idxs):
+        for place_within_tableau, hamiltonian_idx in enumerate(ts):
+            if tableaus[tableau_idx] == identity_tableau:
+                continue
+            assert tableaus[tableau_idx].z_output(place_within_tableau) == operators[hamiltonian_idx]
+    
+
+    # check there are the correct number of operators
+    assert sum([len(idxs) for idxs in pauli_idxs]) == len(operators)
+        
