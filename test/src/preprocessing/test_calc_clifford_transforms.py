@@ -2,7 +2,7 @@ import openfermion as of
 from openfermionpyscf import run_pyscf
 import stim
 from src.preprocessing.commuting_groups import commuting_groups
-from src.preprocessing.calc_resource_stabilisers import clifford_transform_group_to_zs, clifford_transform_multiple_groups_to_zs
+from src.preprocessing.calc_clifford_transforms import clifford_transform_group_to_zs, clifford_transform_multiple_groups_to_zs
 from src.utils import clifford_idx_from_pauli_index, qubitop_to_stim_pauli_strings
 import pytest
 

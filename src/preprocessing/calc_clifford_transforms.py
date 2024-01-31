@@ -1,7 +1,4 @@
-import numpy as np
 import stim
-import galois
-BinaryMatrix = galois.GF(2)
 
 
 def clifford_transform_group_to_zs(operator_group, group_idxs, m_qubits):
@@ -70,6 +67,4 @@ def check_pauli_linear_independence(pauli_list):
         # should probably make sure that the error is not the anticommuting value error
         return False
         
-matrix = BinaryMatrix.Identity(4)
-print(np.linalg.matrix_rank(matrix))
 
