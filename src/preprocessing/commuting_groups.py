@@ -8,8 +8,6 @@ from scipy.sparse import csr_matrix
 from src.utils import qubitop_to_stim_pauli_strings
 
 
-
-
 def commutativity_graph(hamiltonian, n_qubits):
     """Return a graph where edges are between terms that commute."""
     pauli_strings = qubitop_to_stim_pauli_strings(hamiltonian, n_qubits)
@@ -17,7 +15,7 @@ def commutativity_graph(hamiltonian, n_qubits):
     edges = []
     for i, term1 in enumerate(pauli_strings):
         for j, term2 in enumerate(pauli_strings[:i]):
-            if i==j or j > i:
+            if i == j or j > i:
                 continue
             if term1.commutes(term2):
                 edges.append((i, j))
@@ -28,14 +26,14 @@ def commutativity_graph(hamiltonian, n_qubits):
 def calc_min_cliques(graph):
     """Return a list of minimal cliques in a graph."""
     # Get the complement graph
-    # REPLACE THIS WITH FASTER ADJACENCY MATRIX METHOD AND REMOVE NETWORKX 
+    # REPLACE THIS WITH FASTER ADJACENCY MATRIX METHOD AND REMOVE NETWORKX
     adj = np.asarray(adjacency(graph).todense() == 0)
     np.fill_diagonal(adj, False)
     comp_sparse = np.dstack(csr_matrix(adj).nonzero())[0]
     complement_graph = Graph(g=comp_sparse, directed=False)
     coloring = sequential_vertex_coloring(complement_graph)
     return coloring.a
-    
+
 
 def commuting_groups(hamiltonian, n_qubits=None):
     """Return a list of commuting groups of paulis in the form of stim PauliStrings, as well as the indexes of terms in the Hamiltonian that belong to each group."""
