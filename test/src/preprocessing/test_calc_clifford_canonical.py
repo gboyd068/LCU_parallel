@@ -2,7 +2,7 @@ import numpy as np
 import stim
 import galois
 BinaryMatrix = galois.GF(2)
-from src.preprocessing.calc_clifford_canonical import sym_plus_diag_to_invertible, partial_hadamard_sym, convert_tableau_to_symplectic, get_blocks, linearly_independent_row_idxs
+from src.preprocessing.calc_clifford_canonical import sym_plus_diag_to_invertible, partial_hadamard_sym, convert_tableau_to_symplectic, get_blocks, linearly_independent_row_idxs, clifford_canonical_form
 
 def test_sym_plus_diag_to_invertible():
     """test that the output of sym_plus_diag_to_invertible is correct for a series of random inputs"""
@@ -32,3 +32,7 @@ def test_partial_hadamard_sym():
         Hmat = partial_hadamard_sym(mat)
         # assert top right block of product is invertible
         assert np.linalg.det(get_blocks(Hmat @ mat)[1])
+
+
+def test_clifford_canonical_form(tableau):
+    
