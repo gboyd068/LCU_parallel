@@ -1,8 +1,6 @@
 import numpy as np
 import stim
 import galois
-
-BinaryMatrix = galois.GF(2)
 from src.preprocessing.calc_clifford_canonical import (
     sym_plus_diag_to_invertible,
     partial_hadamard_sym,
@@ -11,6 +9,8 @@ from src.preprocessing.calc_clifford_canonical import (
     linearly_independent_row_idxs,
     clifford_canonical_form,
 )
+
+BinaryMatrix = galois.GF(2)
 
 
 def test_sym_plus_diag_to_invertible():
