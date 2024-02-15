@@ -89,6 +89,4 @@ def split_stabs_to_x_and_z(stabilizers):
     return xs, zs
 
 
-xs, zs = split_stabs_to_x_and_z(cstage_state1(10))
-print(xs)
-print(zs)
+print(stim.Tableau.from_stabilizers(cstage_state1(10)).to_circuit().diagram())
