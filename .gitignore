@@ -1,2 +1,5 @@
 *.pyc
 */__pycache__/*
+obj/__entrypoint__.dll
+obj/__entrypoint__snippets__.dll
+obj/__snippets__.dll

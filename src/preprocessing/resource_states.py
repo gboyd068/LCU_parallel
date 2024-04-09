@@ -1,6 +1,7 @@
 import stim
 import galois
 import numpy as np
+from src.preprocessing.calc_clifford_canonical import convert_tableau_to_symplectic
 
 BinaryMatrix = galois.GF(2)
 
@@ -14,61 +15,6 @@ def matrix_to_stabilizers(mat):
         )
         for row in mat
     ]
-
-
-def cstage_state1(n_qubits):
-    """Produces the stabilizers of the first resource
-    state for the cnot stage, n_qubits is the number of qubits
-    in the system register"""
-    mat = BinaryMatrix.Zeros((2 * 4 * n_qubits, 4 * n_qubits))
-    mat[:n_qubits, :n_qubits] = BinaryMatrix.Identity(n_qubits)
-    mat[n_qubits : 2 * n_qubits, :n_qubits] = BinaryMatrix.Identity(n_qubits)
-    mat[2 * n_qubits : 4 * n_qubits, 2 * n_qubits : 4 * n_qubits] = (
-        BinaryMatrix.Identity(2 * n_qubits)
-    )
-
-    mat[4 * n_qubits : 5 * n_qubits, n_qubits : 2 * n_qubits] = BinaryMatrix.Identity(
-        n_qubits
-    )
-    mat[5 * n_qubits : 6 * n_qubits, n_qubits : 2 * n_qubits] = BinaryMatrix.Identity(
-        n_qubits
-    )
-    return matrix_to_stabilizers(mat.transpose())
-
-
-def cstage_state2(n_qubits, M):
-    """Produces the stabilizers of the 2nd resource
-    state for the cnot stage, n_qubits is the number of qubits
-    in the system register, M is the binary matrix that corresponds to
-    the cnot layer"""
-    mat = BinaryMatrix.Zeros((2 * 4 * n_qubits, 4 * n_qubits))
-    mat[2 * n_qubits : 3 * n_qubits, 2 * n_qubits : 3 * n_qubits] = np.linalg.inv(
-        M
-    ) + BinaryMatrix.Identity(n_qubits)
-    mat[6 * n_qubits : 7 * n_qubits, :n_qubits] = BinaryMatrix.Identity(n_qubits)
-    mat[7 * n_qubits :, :n_qubits] = np.linalg.inv(
-        M.transpose()
-    ) + BinaryMatrix.Identity(n_qubits)
-    mat[4 * n_qubits : 6 * n_qubits, 2 * n_qubits : 4 * n_qubits] = (
-        BinaryMatrix.Identity(2 * n_qubits)
-    )
-    return matrix_to_stabilizers(mat.transpose())
-
-
-def cstage_state3(n_qubits):
-    """Produces the stabilizers of the 3rd resource
-    state for the cnot stage, n_qubits is the number of qubits
-    in the system register"""
-    mat = BinaryMatrix.Zeros((2 * 4 * n_qubits, 4 * n_qubits))
-    mat[:n_qubits, :n_qubits] = BinaryMatrix.Identity(n_qubits)
-    mat[2 * n_qubits : 4 * n_qubits, 2 * n_qubits :] = BinaryMatrix.Identity(
-        2 * n_qubits
-    )
-
-    mat[5 * n_qubits : 6 * n_qubits, n_qubits : 2 * n_qubits] = BinaryMatrix.Identity(
-        n_qubits
-    )
-    return matrix_to_stabilizers(mat.transpose())
 
 
 def split_stabs_to_x_and_z(stabilizers):
@@ -89,4 +35,35 @@ def split_stabs_to_x_and_z(stabilizers):
     return xs, zs
 
 
-print(stim.Tableau.from_stabilizers(cstage_state1(10)).to_circuit().diagram())
+def complete_stabilizers(stabilizers):
+    return split_stabs_to_x_and_z(matrix_to_stabilizers(convert_tableau_to_symplectic(stim.Tableau.from_stabilizers(stabilizers, allow_underconstrained=True))))
+
+
+def x_resource_state_stabilizers(n):
+    """returns the stabilizers for the x resource state, although we dont really need these since it 
+    is so easy to produce the state"""
+    stabs = []
+    # get the x stabilizers
+    for i in range(n):
+        ps = stim.PauliString(2 * n)
+        ps[i] = 1
+        ps[i + n] = 1
+        stabs.append(ps)
+
+    return complete_stabilizers(stabs)
+
+
+def z_resource_state_stabilizers(n, U):
+    """returns the stabilizers for the z resource state, where U is a BinaryMatrix
+    giving the cnot layer operation"""
+
+    matrix = BinaryMatrix.Identity(n) @ np.linalg.inv(U.transpose()) + BinaryMatrix.Identity(n)
+
+    stabs = []
+    for i, row in enumerate(matrix):
+        ps = stim.PauliString(2 * n)
+        for j, val in enumerate(row):
+            if val:
+                ps[j] = 1
+        stabs.append(ps)
+    return complete_stabilizers(stabs)

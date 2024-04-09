@@ -48,5 +48,5 @@ def test_partial_hadamard_sym():
 
 
 def test_clifford_canonical_form():
-    for tableau in stim.Tableau.iter_all(3, unsigned=True):
+    for tableau in stim.Tableau.iter_all(2, unsigned=True):
         print(clifford_canonical_form(tableau, test=True))

@@ -11,8 +11,6 @@ def clifford_transform_group_to_zs(operator_group, group_idxs, m_qubits):
 
     tableaus = []
     for group in groups:
-        # I think the fact that redundant stabilisers are ignored means we cant use this
-        # might have to figure out how to use from_conjugated_generators or just use the matirx form...
         tableaus.append(
             stim.Tableau.from_stabilizers(
                 stabilizers=group, allow_underconstrained=True, allow_redundant=False

@@ -1,5 +1,6 @@
 namespace LCUParallel {
 
+    open Microsoft.Quantum.Convert;
     open Microsoft.Quantum.Math;
     open Microsoft.Quantum.Measurement;
     open Microsoft.Quantum.Arrays;
@@ -88,10 +89,17 @@ namespace LCUParallel {
 
         // cnot layer
         // prepare and use x resource state
-        PrepareCSSFromStabs(resource_ancillas, cnotSpec::xstabs1, cnotSpec::zstabs1);
+        // this is actually very simple and can be done just by preparing bell pairs
+        for i in 0 .. n - 1 {
+            H(resource_ancillas[i]);
+            CNOT(resource_ancillas[i], resource_ancillas[i+n]);
+        }
         let x_results = HalfSteaneSyndromeMeasurement(qs, a_ancillas, resource_ancillas, true);
+        ResetAll(resource_ancillas);
+
+
         // prepare and use z resource state
-        PrepareCSSFromStabs(resource_ancillas, cnotSpec::xstabs2, cnotSpec::zstabs2);
+        PrepareCSSFromStabs(resource_ancillas, cnotSpec::xstabs, cnotSpec::zstabs);
         let z_results = HalfSteaneSyndromeMeasurement(qs, a_ancillas, resource_ancillas, false);
 
         let a_results = MeasureEachX(a_ancillas);
@@ -103,10 +111,9 @@ namespace LCUParallel {
         ResetAll(a_ancillas);
     }
 
-    newtype CnotLayerSpec = (xstabs1: Pauli[][], 
-                            zstabs1: Pauli[][], 
-                            xstabs2: Pauli[][],
-                            zstabs2: Pauli[][]
+    newtype CnotLayerSpec = (
+                            xstabs: Pauli[][],
+                            zstabs: Pauli[][]
                             );
 
     newtype CliffordSpec = (cnotL: CnotLayerSpec,
@@ -147,21 +154,46 @@ namespace LCUParallel {
 
     }
 
-    operation ApplyLCUPartition(qs: Qubit[], prepRegisters: Qubit[][], hamilTerms, clifford: CliffordSpec) : Unit is Adj {
-        body ... {
-            // Apply clifford transformation on main register
+
+    operation ApplyLCUPartition(qs: Qubit[], prepRegisters: Qubit[][], nTerms: Int, clifford: CliffordSpec) : Unit is Adj {
+        within {
             CliffordConstantDepth(qs, clifford);
-            // apply hamiltonian terms
-            for i in 0 .. Length(hamilTerms) - 1 {
-                let term = hamilTerms[i];
-                let reg = prepRegisters[i];
-                ApplyControlledOnInt(i, termFunc, reg, qs);
+        } apply {
+            // apply hamiltonian terms (they have been transformed to PauliZ by the clifford circuit)
+            for i in 0 .. nTerms - 1 {
+                ApplyControlledOnInt(i, ApplyP(PauliZ, _), prepRegisters[i], qs[i]);
             }
-            // apply clifford adjoint
-            Adjoint CliffordConstantDepth(qs, clifford);
+        }
+    }
+
+
+    operation LoadHamiltonianCoefs(prep_ancilla: Qubit[], hamCoefs: Double[]) : Unit is Adj + Ctl { 
+        // load the hamiltonian coefficients into an ancilla register
+        // dont even need to do this for the resource estimate to be honest
+    }
+
+    function SplitList(qs: Qubit[], k: Int) : Qubit[][] {
+        let n = Length(qs);
+        let size = n / k;
+        mutable result: Qubit[][] = [];
+        for i in 0 .. k-1 {
+            set result += [qs[i*size .. (i+1)*size-1]];
+        }
+    return result;
+
+}
+
+    @EntryPoint()
+    operation testResource(): Unit {
+        let n = 1000;
+        let nTerms = 1;
+        use qs = Qubit[n];
+        use ancillas = Qubit[nTerms * Ceiling(Lg(IntAsDouble(n)))];
+        let prepRegisters = SplitList(ancillas, nTerms);
+        for i in 0 .. nTerms - 1 {
+            ApplyControlledOnInt(i, ApplyP(PauliZ, _), prepRegisters[i], qs[i]);
         }
     }
 
 }
-
 
