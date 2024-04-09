@@ -6,19 +6,39 @@ from graph_tool.spectral import adjacency
 import numpy as np
 from scipy.sparse import csr_matrix
 from src.utils import qubitop_to_stim_pauli_strings
+import multiprocessing as mp
+import itertools
+from functools import partial
+
+
+def check_commute(pair):
+        i = pair[0]
+        j = pair[1]
+        return i.commutes(j)
 
 
 def commutativity_graph(hamiltonian, n_qubits):
     """Return a graph where edges are between terms that commute."""
     pauli_strings = qubitop_to_stim_pauli_strings(hamiltonian, n_qubits)
     graph = Graph(len(pauli_strings), directed=False)
+
+    n_strings = len(pauli_strings)
+    idx_pairs = list(itertools.combinations(range(n_strings), 2))
+    pauli_pairs = list(itertools.combinations(pauli_strings, 2))
+
     edges = []
-    for i, term1 in enumerate(pauli_strings):
-        for j, term2 in enumerate(pauli_strings[:i]):
-            if i == j or j > i:
-                continue
-            if term1.commutes(term2):
-                edges.append((i, j))
+    with mp.Pool(mp.cpu_count()) as pool:
+        results = pool.map(check_commute, pauli_pairs)
+        for i, result in enumerate(results):
+            if result:
+                edges.append(idx_pairs[i])
+    # edges = []
+    # for i, term1 in enumerate(pauli_strings):
+    #     for j, term2 in enumerate(pauli_strings[:i]):
+    #         if i == j or j > i:
+    #             continue
+    #         if term1.commutes(term2):
+    #             edges.append((i, j))
     graph.add_edge_list(edges)
     return graph
 
