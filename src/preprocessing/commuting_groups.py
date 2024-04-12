@@ -32,13 +32,25 @@ def commutativity_graph(hamiltonian, n_qubits):
         for i, result in enumerate(results):
             if result:
                 edges.append(idx_pairs[i])
-    # edges = []
-    # for i, term1 in enumerate(pauli_strings):
-    #     for j, term2 in enumerate(pauli_strings[:i]):
-    #         if i == j or j > i:
-    #             continue
-    #         if term1.commutes(term2):
-    #             edges.append((i, j))
+    graph.add_edge_list(edges)
+    return graph
+
+
+def anticommutativity_graph(hamiltonian, n_qubits):
+    """Return a graph where edges are between terms that commute."""
+    pauli_strings = qubitop_to_stim_pauli_strings(hamiltonian, n_qubits)
+    graph = Graph(len(pauli_strings), directed=False)
+
+    n_strings = len(pauli_strings)
+    idx_pairs = list(itertools.combinations(range(n_strings), 2))
+    pauli_pairs = list(itertools.combinations(pauli_strings, 2))
+
+    edges = []
+    with mp.Pool(mp.cpu_count()) as pool:
+        results = pool.map(check_commute, pauli_pairs)
+        for i, result in enumerate(results):
+            if not result:
+                edges.append(idx_pairs[i])
     graph.add_edge_list(edges)
     return graph
 
@@ -60,7 +72,8 @@ def commuting_groups(hamiltonian, n_qubits=None):
     if n_qubits is None:
         n_qubits = hamiltonian.n_qubits
     # Get the minimal cliques
-    clique_array = calc_min_cliques(commutativity_graph(hamiltonian, n_qubits))
+    agraph = anticommutativity_graph(hamiltonian, n_qubits)
+    clique_array = sequential_vertex_coloring(agraph).a
     # count number of appearances of each integer in array
     clique_idxs, clique_counts = np.unique(clique_array, return_counts=True)
     # get the commuting groups

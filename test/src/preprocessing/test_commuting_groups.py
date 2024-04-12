@@ -8,8 +8,9 @@ from src.preprocessing.commuting_groups import commuting_groups
 @pytest.mark.parametrize(
     "geometry",
     [
-        [("H", (0.0, 1.0, 0.0)), ("H", (0.0, 0.0, 1.0)), ("O", (0.0, 0.0, 0.0))],
         [("Li", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 1.0))],
+        [("H", (0.0, 1.0, 0.0)), ("H", (0.0, 0.0, 1.0)), ("O", (0.0, 0.0, 0.0))],
+        
     ],
 )
 def test_commuting_groups(geometry):
