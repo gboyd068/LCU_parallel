@@ -12,9 +12,9 @@ from functools import partial
 
 
 def check_commute(pair):
-        i = pair[0]
-        j = pair[1]
-        return i.commutes(j)
+    i = pair[0]
+    j = pair[1]
+    return i.commutes(j)
 
 
 def commutativity_graph(hamiltonian, n_qubits):
@@ -71,7 +71,7 @@ def commuting_groups(hamiltonian, n_qubits=None):
     """Return a list of commuting groups of paulis in the form of stim PauliStrings, as well as the indexes of terms in the Hamiltonian that belong to each group."""
     if n_qubits is None:
         n_qubits = hamiltonian.n_qubits
-    # Get the minimal cliques
+    # Get the minimal cliques in the commutativity graph, which corresponds to colourings in the anticommutativity graph
     agraph = anticommutativity_graph(hamiltonian, n_qubits)
     clique_array = sequential_vertex_coloring(agraph).a
     # count number of appearances of each integer in array
