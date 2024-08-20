@@ -6,7 +6,24 @@ namespace LCUParallel {
     open Microsoft.Quantum.Arrays;
     open Microsoft.Quantum.Diagnostics;
 
+    newtype CnotLayerSpec = (
+                        xstabs: Pauli[][],
+                        zstabs: Pauli[][]
+                        );
+
+
+    newtype CliffordSpec = (
+                            cnotL: CnotLayerSpec,
+                            cnotM: CnotLayerSpec,
+                            phase2Mask: Bool[],
+                            cnotN: CnotLayerSpec,
+                            phase1Mask: Bool[],
+                            hadamardMask: Bool[]
+                            );
+
+
     operation PrepareCSSFromStabs (resource_CSS: Qubit [], xstabs : Pauli [][], zstabs : Pauli [][] ) : Unit {
+        // Prepares a CSS state from its stabilisers through measurement and correction
         Fact(Length(xstabs) == Length(zstabs), "xstabs and zstabs must have the same length");
         Fact(Length(xstabs) == Length(resource_CSS), "must have same number of stabilizers and qubits");
 
@@ -38,8 +55,7 @@ namespace LCUParallel {
 
 
     operation FanoutRegister(origin_register: Qubit[], target_registers: Qubit[][]) : Unit is Adj + Ctl {
-        // log depth fanout operation via recursion, can be converted to linear depth using ancilla or surface code compilation tricks
-        // TEST THIS
+        // log depth fanout operation via recursion, can be converted to constant depth using ancilla or surface code compilation tricks
         let n_reg = Length(target_registers);
         if (n_reg == 1) {
             CNOTTransversal(origin_register, target_registers[0]);
@@ -83,6 +99,8 @@ namespace LCUParallel {
     }
 
     operation CnotLayerFromCnotLayerSpec(qs: Qubit[], cnotSpec: CnotLayerSpec): Unit {
+        // Applies a CNOT circuit in constant depth using measurement and feedforward
+        // CNOT layer specified by the stabilizers of the circuit
         let n = Length(qs);
         use resource_ancillas = Qubit[2*n];
         use a_ancillas = Qubit[n];
@@ -104,25 +122,11 @@ namespace LCUParallel {
 
         let a_results = MeasureEachX(a_ancillas);
 
-        // do pauli corrections (SHOULD BE POSSIBLE TO FIGURE OUT)
-
+        // TODO, apply pauli corrections here
 
         ResetAll(resource_ancillas);
         ResetAll(a_ancillas);
     }
-
-    newtype CnotLayerSpec = (
-                            xstabs: Pauli[][],
-                            zstabs: Pauli[][]
-                            );
-
-    newtype CliffordSpec = (cnotL: CnotLayerSpec,
-                            cnotM: CnotLayerSpec,
-                            phase2Mask: Bool[],
-                            cnotN: CnotLayerSpec,
-                            phase1Mask: Bool[],
-                            hadamardMask: Bool[]
-                            );
 
 
     operation ApplyOnMask(qs: Qubit[], mask: Bool[], op: (Qubit => Unit)) : Unit {
@@ -134,7 +138,9 @@ namespace LCUParallel {
     }
 
     operation CliffordConstantDepth(qs : Qubit [], clifford: CliffordSpec) : Unit is Adj {
-        // docstring
+        // Applies a Clifford circuit in constant depth using the canonical form
+        // given in Proctor and Young https://arxiv.org/abs/2310.10882, applying CNOT layers in constant depth
+        // using the scheme from https://arxiv.org/abs/1805.12082
         body ... {      
             CnotLayerFromCnotLayerSpec(qs, clifford::cnotL);
             ApplyToEach(S, qs);
@@ -147,9 +153,9 @@ namespace LCUParallel {
             ApplyOnMask(qs, clifford::hadamardMask, H);       
         }
 
-        // think about how to do adjoint version of this, just need to correct resource states
+        // adjoint version of this required for within block, just need to correct resource states
         adjoint ... {
-            // calculate the adjoint clifford spec... etC
+            // calculate the adjoint clifford spec... etc
         }
 
     }
@@ -159,7 +165,7 @@ namespace LCUParallel {
         within {
             CliffordConstantDepth(qs, clifford);
         } apply {
-            // apply hamiltonian terms (they have been transformed to PauliZ by the clifford circuit)
+            // apply hamiltonian terms (they have been transformed to PauliZs by the clifford circuit)
             for i in 0 .. nTerms - 1 {
                 ApplyControlledOnInt(i, ApplyP(PauliZ, _), prepRegisters[i], qs[i]);
             }
@@ -167,33 +173,28 @@ namespace LCUParallel {
     }
 
 
-    operation LoadHamiltonianCoefs(prep_ancilla: Qubit[], hamCoefs: Double[]) : Unit is Adj + Ctl { 
-        // load the hamiltonian coefficients into an ancilla register
-        // dont even need to do this for the resource estimate to be honest
-    }
-
-    function SplitList(qs: Qubit[], k: Int) : Qubit[][] {
+    function SplitRegister(qs: Qubit[], k: Int) : Qubit[][] {
+        // takes a register and splits it into k registers of equal size
         let n = Length(qs);
         let size = n / k;
+        Fact(n % k == 0, "register must be divisible by k");
         mutable result: Qubit[][] = [];
         for i in 0 .. k-1 {
             set result += [qs[i*size .. (i+1)*size-1]];
         }
-    return result;
-
-}
+        return result;
+    }
 
     @EntryPoint()
     operation testResource(): Unit {
-        let n = 1000;
+        let n = 100;
         let nTerms = 1;
         use qs = Qubit[n];
         use ancillas = Qubit[nTerms * Ceiling(Lg(IntAsDouble(n)))];
-        let prepRegisters = SplitList(ancillas, nTerms);
+        let prepRegisters = SplitRegister(ancillas, nTerms);
         for i in 0 .. nTerms - 1 {
             ApplyControlledOnInt(i, ApplyP(PauliZ, _), prepRegisters[i], qs[i]);
         }
     }
-
 }
 

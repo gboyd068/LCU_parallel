@@ -36,7 +36,13 @@ def split_stabs_to_x_and_z(stabilizers):
 
 
 def complete_stabilizers(stabilizers):
-    return split_stabs_to_x_and_z(matrix_to_stabilizers(convert_tableau_to_symplectic(stim.Tableau.from_stabilizers(stabilizers, allow_underconstrained=True))))
+    return split_stabs_to_x_and_z(
+        matrix_to_stabilizers(
+            convert_tableau_to_symplectic(
+                stim.Tableau.from_stabilizers(stabilizers, allow_underconstrained=True)
+            )
+        )
+    )
 
 
 def x_resource_state_stabilizers(n):

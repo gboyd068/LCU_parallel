@@ -1,5 +1,3 @@
-import openfermion as of
-from openfermionpyscf import run_pyscf
 from graph_tool import Graph
 from graph_tool.topology import sequential_vertex_coloring
 from graph_tool.spectral import adjacency
@@ -8,7 +6,6 @@ from scipy.sparse import csr_matrix
 from src.utils import qubitop_to_stim_pauli_strings
 import multiprocessing as mp
 import itertools
-from functools import partial
 
 
 def check_commute(pair):

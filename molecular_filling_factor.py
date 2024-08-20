@@ -8,7 +8,7 @@ from src.preprocessing.commuting_groups import commuting_groups
 from src.utils import qubitop_to_stim_pauli_strings
 from openfermion.chem import geometry_from_pubchem
 
-# should be able to split slurm jobs accross these, although perhaps not the best idea as I don't know how much memory each will need
+# should be able to split slurm jobs accross these, although I don't know how much memory each will need
 molecule_names = ["molecular hydrogen", "lithium hydride", "water", "ammonia", "methane", "oxygen", "molecular nitrogen", "ethane", "disodium", 
                   # "XVOFZWCCFLVFRR-UHFFFAOYSA-N" # CrO oxochromium
                   ]
@@ -46,6 +46,6 @@ for i, hd in enumerate(hamiltonianData):
     filling = np.mean([len(idx) for idx in pauli_idxs]) / n
     # num_qubits, num_terms, filling, molecule_name, basis
     print(f"{n}, {hd[1]}, {filling}, {hd[3]}, {hd[4]}\n")
-    with open('filling.txt', 'w') as file: # make sure this works correctly with different jobs etc
+    with open('filling.txt', 'w') as file:
         file.write(f"{n}, {hd[1]}, {filling}, {hd[3]}, {hd[4]}\n")
     fillings.append(np.mean([len(idx) for idx in pauli_idxs]) / n)

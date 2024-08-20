@@ -1,5 +1,4 @@
 import stim
-import multiprocessing as mp
 
 def clifford_transform_group_to_zs(operator_group, group_idxs, m_qubits):
     """Takes a commuting groups of oeprators and calculate the clifford transformation a stim.Tableau object
