@@ -60,10 +60,9 @@ def x_resource_state_stabilizers(n):
 
 
 def z_resource_state_stabilizers(n, U):
-    """returns the stabilizers for the z resource state, where U is a BinaryMatrix
+    """returns the stabilizers for the z resource state, where U is a BinaryMatrix'
     giving the cnot layer operation"""
-
-    matrix = BinaryMatrix.Identity(n) @ np.linalg.inv(U.transpose()) + BinaryMatrix.Identity(n)
+    matrix = np.hstack((BinaryMatrix.Identity(n), np.linalg.inv(U.transpose()) + BinaryMatrix.Identity(n)))
 
     stabs = []
     for i, row in enumerate(matrix):

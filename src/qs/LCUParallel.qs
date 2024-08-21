@@ -7,18 +7,24 @@ namespace LCUParallel {
     open Microsoft.Quantum.Diagnostics;
 
     newtype CnotLayerSpec = (
+    // specifies the stabilizers for the non-trivial resource state (z state / Omega_2 in the paper)
                         xstabs: Pauli[][],
                         zstabs: Pauli[][]
                         );
 
 
     newtype CliffordSpec = (
+    // input from python preprocessing of required Clifford transformations
                             cnotL: CnotLayerSpec,
                             cnotM: CnotLayerSpec,
                             phase2Mask: Bool[],
                             cnotN: CnotLayerSpec,
                             phase1Mask: Bool[],
-                            hadamardMask: Bool[]
+                            hadamardMask: Bool[],
+                            // also include specs for inverse of the cnot layers
+                            cnotLinv: CnotLayerSpec,
+                            cnotMinv: CnotLayerSpec,
+                            cnotNinv: CnotLayerSpec
                             );
 
 
@@ -98,16 +104,24 @@ namespace LCUParallel {
         return results;
     }
 
+    operation CnotLayerPauliCorrection(qs: Qubit[], x_results: Result[], z_results: Result[], a_results: Result[]) : Unit {
+        // Applies Pauli corrections after the constant depth CNOT layer based on the measurement results
+        let n = Length(qs);
+        // Working out the correction requires tracking the signs in the tableau, and correcting based on the measurement results
+        // from the syndrome extraction, https://arxiv.org/abs/quant-ph/0406196, https://arxiv.org/abs/1805.12082, https://arxiv.org/abs/quant-ph/0408190
+        // should be helpful for this, single Pauli layer not helpful for resource estimation so has been omitted for now
+    }
+
     operation CnotLayerFromCnotLayerSpec(qs: Qubit[], cnotSpec: CnotLayerSpec): Unit {
         // Applies a CNOT circuit in constant depth using measurement and feedforward
-        // CNOT layer specified by the stabilizers of the circuit
+        // CNOT layer specified by the stabilizers specifying the non-trivial resource state
         let n = Length(qs);
         use resource_ancillas = Qubit[2*n];
         use a_ancillas = Qubit[n];
 
         // cnot layer
         // prepare and use x resource state
-        // this is actually very simple and can be done just by preparing bell pairs
+        // very simple and can be done just by preparing bell pairs
         for i in 0 .. n - 1 {
             H(resource_ancillas[i]);
             CNOT(resource_ancillas[i], resource_ancillas[i+n]);
@@ -122,7 +136,7 @@ namespace LCUParallel {
 
         let a_results = MeasureEachX(a_ancillas);
 
-        // TODO, apply pauli corrections here
+        CnotLayerPauliCorrection(qs, x_results, z_results, a_results);
 
         ResetAll(resource_ancillas);
         ResetAll(a_ancillas);
@@ -153,9 +167,16 @@ namespace LCUParallel {
             ApplyOnMask(qs, clifford::hadamardMask, H);       
         }
 
-        // adjoint version of this required for within block, just need to correct resource states
         adjoint ... {
-            // calculate the adjoint clifford spec... etc
+            ApplyOnMask(qs, clifford::hadamardMask, H);
+            ApplyOnMask(qs, clifford::phase1Mask, Adjoint S);
+            CnotLayerFromCnotLayerSpec(qs, clifford::cnotNinv);
+            ApplyToEach(Adjoint S, qs);
+            ApplyToEach(H, qs);
+            ApplyOnMask(qs, clifford::phase2Mask, Adjoint S);
+            CnotLayerFromCnotLayerSpec(qs, clifford::cnotMinv);
+            ApplyToEach(Adjoint S, qs);
+            CnotLayerFromCnotLayerSpec(qs, clifford::cnotLinv);
         }
 
     }
